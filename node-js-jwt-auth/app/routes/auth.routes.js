@@ -14,10 +14,12 @@ module.exports = function(app) {
     "/api/auth/signup",
     [
       verifySignUp.checkDuplicateUsernameOrEmail,
-      verifySignUp.checkRolesExisted
     ],
     controller.signup
   );
 
   app.post("/api/auth/signin", controller.signin);
+  app.get("/api/auth/signin", (req, res) => {
+    res.status(200).send("hello world");
+  })
 };

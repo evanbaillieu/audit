@@ -1,49 +1,30 @@
 const db = require("../models");
 const config = require("../config/auth.config");
 const User = db.user;
-const Role = db.role;
 
-const Op = db.Sequelize.Op;
 
 var jwt = require("jsonwebtoken");
-var bcrypt = require("bcryptjs");
 
 exports.signup = (req, res) => {
   // Save User to Database
   User.create({
     username: req.body.username,
-    email: req.body.email,
-    password: bcrypt.hashSync(req.body.password, 8)
-  })
-    .then(user => {
-      if (req.body.roles) {
-        Role.findAll({
-          where: {
-            name: {
-              [Op.or]: req.body.roles
-            }
-          }
-        }).then(roles => {
-          user.setRoles(roles).then(() => {
-            res.send({ message: "User registered successfully!" });
-          });
-        });
-      } else {
-        // user role = 1
-        user.setRoles([1]).then(() => {
-          res.send({ message: "User registered successfully!" });
-        });
-      }
-    })
-    .catch(err => {
-      res.status(500).send({ message: err.message });
+    nom: req.body.nom,
+    prenom: req.body.prenom,
+    login: req.body.login,
+    password: req.body.password,
+    poste_id: req.body.poste_id,
+    audit_id: req.body.audit_id
+  }).catch(err => {
+      const messager = "I don't creat your account."; 
+      res.status(500).send({ message: messager, err: errr.message });
     });
 };
 
 exports.signin = (req, res) => {
   User.findOne({
     where: {
-      username: req.body.username
+      login: req.body.login
     }
   })
     .then(user => {
@@ -51,11 +32,7 @@ exports.signin = (req, res) => {
         return res.status(404).send({ message: "User Not found." });
       }
 
-      var passwordIsValid = bcrypt.compareSync(
-        req.body.password,
-        user.password
-      );
-
+      var passwordIsValid = (req.body.password == user.password) ? true : false;
       if (!passwordIsValid) {
         return res.status(401).send({
           accessToken: null,
@@ -66,22 +43,17 @@ exports.signin = (req, res) => {
       var token = jwt.sign({ id: user.id }, config.secret, {
         expiresIn: 86400 // 24 hours
       });
-
-      var authorities = [];
-      user.getRoles().then(roles => {
-        for (let i = 0; i < roles.length; i++) {
-          authorities.push("ROLE_" + roles[i].name.toUpperCase());
-        }
         res.status(200).send({
           id: user.id,
-          username: user.username,
-          email: user.email,
-          roles: authorities,
+          nom: user.nom,
+          prenom: user.prenom,
+          login: user.login,
+          password: user.password,
           accessToken: token
         });
-      });
     })
     .catch(err => {
-      res.status(500).send({ message: err.message });
+      let message = "your login is not found"
+      res.status(500).send({ message: message, err: err.message});
     });
 };
